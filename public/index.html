@@ -3,13 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Getting Started</title>
-
-  <script src="./bundle.js"></script>
+  <title>Employee Directory</title>
 </head>
 <body>
 
+<!-- Buttons for user interaction -->
+<button id="addEmployeeBtn">Add Employee</button>
+<button id="getAllEmployeesBtn">Get All Employees</button>
+<button id="updateEmployeeBtn">Update Employee</button>
+<button id="deleteEmployeeBtn">Delete Employee</button>
+
+<!-- Firebase SDK imports -->
+<script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-analytics.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-firestore.js"></script>
+
+<!-- Your main JavaScript files -->
+<script src="./bundle.js"></script>
+<script src="./app.js"></script>
+
 </body>
 </html>
-
-
