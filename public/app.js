@@ -12,33 +12,96 @@ const firebaseConfig = {
 
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
-const analytics = firebase.analytics();
 const db = firebase.firestore();
 
+// User interaction functions
+document.getElementById("createEmployeeBtn").addEventListener("click", function () {
+    addEmployee();
+});
+
+document.getElementById("readEmployeeBtn").addEventListener("click", function () {
+    let employeeIdField = document.getElementById("employeeId");
+    let isReadOnly = employeeIdField.readOnly;
+
+    if (!isReadOnly) {
+        const employeeId = employeeIdField.value;
+
+        if (!employeeId) {
+            alert("Please provide the employee ID to read.");
+            return;
+        }
+
+        readEmployee(employeeId);
+        // Commented the line below to allow input after reading
+        // employeeIdField.readOnly = true;
+    } else {
+        employeeIdField.readOnly = false;
+    }
+});
+
+document.getElementById("updateEmployeeBtn").addEventListener("click", function () {
+    const employeeId = document.getElementById("employeeId").value;
+    const newName = document.getElementById("name").value;
+    const newPosition = document.getElementById("position").value;
+    const newDepartment = document.getElementById("department").value;
+    const newContact = document.getElementById("contact").value;
+
+    if (!employeeId) {
+        alert("Please provide the employee ID to update.");
+        return;
+    }
+
+    const newData = {};
+    if (newName) newData.name = newName;
+    if (newPosition) newData.position = newPosition;
+    if (newDepartment) newData.department = newDepartment;
+    if (newContact) newData.contact = newContact;
+
+    updateEmployee(employeeId, newData);
+});
+
+document.getElementById("deleteEmployeeBtn").addEventListener("click", function () {
+    const employeeId = document.getElementById("employeeId").value;
+
+    if (!employeeId) {
+        alert("Please provide the employee ID to delete.");
+        return;
+    }
+
+    deleteEmployee(employeeId);
+});
+
 // Function to add an employee to the directory
-function addEmployee(name, position, department, contact) {
+function addEmployee() {
+    const name = document.getElementById("name").value;
+    const position = document.getElementById("position").value;
+    const department = document.getElementById("department").value;
+    const contact = document.getElementById("contact").value;
+
+    if (!name || !position || !department || !contact) {
+        alert("Please provide all information to create an employee.");
+        return;
+    }
+
     // Get the current count of documents in the 'employees' collection
     db.collection('employees').get()
         .then((querySnapshot) => {
             // Calculate the next employee ID based on the number of existing employees
             const employeeId = querySnapshot.size + 101; // Starting from 101
 
-            const employeeData = {
+            const documentId = employeeId.toString();
+
+            db.collection('employees').doc(documentId).set({
                 id: employeeId,
                 name: name,
                 position: position,
                 department: department,
                 contact: contact
-            };
-
-            // Specify the document ID as '101', '102', '103', and so on
-            const documentId = employeeId.toString();
-
-            // Add the employee data to the 'employees' collection with the specified document ID
-            db.collection('employees').doc(documentId).set(employeeData)
+            })
                 .then(() => {
                     console.log("Employee added with ID: ", documentId);
-                    getAllEmployees(); // Refresh the employee list after adding
+                    getAllEmployees();
+                    resetInputFields();
                 })
                 .catch((error) => {
                     console.error("Error adding employee: ", error);
@@ -49,16 +112,23 @@ function addEmployee(name, position, department, contact) {
         });
 }
 
-// Function to retrieve all employees from the directory
-function getAllEmployees() {
-    db.collection('employees').get()
-        .then((querySnapshot) => {
-            querySnapshot.forEach((doc) => {
+// Function to read an employee's information based on document ID
+function readEmployee(employeeId) {
+    const employeeRef = db.collection('employees').doc(employeeId);
+
+    employeeRef.get()
+        .then((doc) => {
+            if (doc.exists) {
                 console.log(doc.id, " => ", doc.data());
-            });
+                displayEmployeeData(doc.data());
+                // Removed resetting input fields to allow editing
+                // resetInputFields();
+            } else {
+                alert("Employee with ID not found");
+            }
         })
         .catch((error) => {
-            console.error("Error getting employees: ", error);
+            console.error("Error getting employee data: ", error);
         });
 }
 
@@ -69,7 +139,8 @@ function updateEmployee(employeeId, newData) {
     employeeRef.update(newData)
         .then(() => {
             console.log("Employee updated successfully");
-            getAllEmployees(); // Refresh the employee list after updating
+            getAllEmployees();
+            resetInputFields();
         })
         .catch((error) => {
             console.error("Error updating employee: ", error);
@@ -81,39 +152,50 @@ function deleteEmployee(employeeId) {
     db.collection('employees').doc(employeeId).delete()
         .then(() => {
             console.log("Employee deleted successfully");
-            getAllEmployees(); // Refresh the employee list after deleting
+            getAllEmployees();
+            resetInputFields();
         })
         .catch((error) => {
             console.error("Error deleting employee: ", error);
         });
 }
 
-// User interaction functions
-document.getElementById("addEmployeeBtn").addEventListener("click", function () {
-    const name = prompt("Enter employee name:");
-    const position = prompt("Enter employee position:");
-    const department = prompt("Enter employee department:");
-    const contact = prompt("Enter employee contact:");
+// Function to retrieve all employees from the directory and display as a dashboard
+function getAllEmployees() {
+    const employeesDashboard = document.getElementById("employeesDashboard");
 
-    addEmployee(name, position, department, contact);
-});
+    db.collection('employees').get()
+        .then((querySnapshot) => {
+            let tableHTML = "<table><tr><th>ID</th><th>Name</th><th>Position</th><th>Department</th><th>Contact</th></tr>";
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                tableHTML += `<tr><td>${doc.id}</td><td>${data.name}</td><td>${data.position}</td><td>${data.department}</td><td>${data.contact}</td></tr>`;
+            });
+            tableHTML += "</table>";
+            employeesDashboard.innerHTML = tableHTML;
+        })
+        .catch((error) => {
+            console.error("Error getting employees: ", error);
+        });
+}
 
-document.getElementById("getAllEmployeesBtn").addEventListener("click", function () {
-    getAllEmployees();
-});
+// Function to display employee data in input fields
+function displayEmployeeData(data) {
+    document.getElementById("employeeId").value = data.id;
+    document.getElementById("name").value = data.name;
+    document.getElementById("position").value = data.position;
+    document.getElementById("department").value = data.department;
+    document.getElementById("contact").value = data.contact;
+}
 
-document.getElementById("updateEmployeeBtn").addEventListener("click", function () {
-    const employeeId = prompt("Enter employee ID to update:");
-    const newName = prompt("Enter new name:");
-    const newPosition = prompt("Enter new position:");
-    const newDepartment = prompt("Enter new department:");
-    const newContact = prompt("Enter new contact:");
+// Function to reset input fields
+function resetInputFields() {
+    document.getElementById("employeeId").value = "";
+    document.getElementById("name").value = "";
+    document.getElementById("position").value = "";
+    document.getElementById("department").value = "";
+    document.getElementById("contact").value = "";
+}
 
-    updateEmployee(employeeId, { name: newName, position: newPosition, department: newDepartment, contact: newContact });
-});
-
-document.getElementById("deleteEmployeeBtn").addEventListener("click", function () {
-    const employeeId = prompt("Enter employee ID to delete:");
-
-    deleteEmployee(employeeId);
-});
+// Initial load of employees on page load
+getAllEmployees();
