@@ -72,6 +72,7 @@ document.getElementById("deleteEmployeeBtn").addEventListener("click", function 
 });
 
 // Function to add an employee to the directory
+// Function to add an employee to the directory
 function addEmployee() {
     const name = document.getElementById("name").value;
     const position = document.getElementById("position").value;
@@ -83,16 +84,24 @@ function addEmployee() {
         return;
     }
 
-    // Get the current count of documents in the 'employees' collection
+    // Get the maximum employee ID from existing employees
     db.collection('employees').get()
         .then((querySnapshot) => {
-            // Calculate the next employee ID based on the number of existing employees
-            const employeeId = querySnapshot.size + 101; // Starting from 101
+            let maxEmployeeId = 100; // Set a default starting ID
+            querySnapshot.forEach((doc) => {
+                const employeeId = doc.data().id;
+                if (employeeId > maxEmployeeId) {
+                    maxEmployeeId = employeeId;
+                }
+            });
 
-            const documentId = employeeId.toString();
+            // Calculate the next employee ID
+            const newEmployeeId = maxEmployeeId + 1;
+
+            const documentId = newEmployeeId.toString();
 
             db.collection('employees').doc(documentId).set({
-                id: employeeId,
+                id: newEmployeeId,
                 name: name,
                 position: position,
                 department: department,
@@ -111,6 +120,7 @@ function addEmployee() {
             console.error("Error getting document count: ", error);
         });
 }
+
 
 // Function to read an employee's information based on document ID
 function readEmployee(employeeId) {
